@@ -19,6 +19,7 @@ on:
 jobs:
   triage_emails:
     runs-on: ubuntu-latest
+    environment: Google Credentials  # Specify the environment to use its secrets
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -41,12 +42,15 @@ jobs:
 
       - name: Create .env file
         run: |
-          cat > .env <<EOF
+          cat <<'EOF' > .env
           OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
           GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
           TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
           EOF
+
+      - name: Verify .env file
+        run: cat .env
 
       - name: Run Email Triage
         run: python email_triage.py
