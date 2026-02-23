@@ -353,7 +353,7 @@ def run_triage():
                 return service.users().messages().list(
                     userId=EMAIL_ADDRESS,
                     q=query,
-                    maxResults=100
+                    maxResults=50
                 ).execute()
             except Exception as e:
                 if attempt == retries - 1:
