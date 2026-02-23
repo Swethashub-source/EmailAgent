@@ -15,12 +15,16 @@ import time
 import asyncio
 import telegram  # For Telegram Bot
 
-load_dotenv()
+# Explicitly specify path to .env file to fix dotenv issue
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path=dotenv_path)
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS")
+SHEET_ID = os.getenv("SHEET_ID")
 
 # Choose which AI to use
 USE_OPENROUTER = True  # Set to False to use Google Gemini
@@ -47,8 +51,6 @@ if TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID:
 
 # === CONFIG ===
 SCOPES = ['https://www.googleapis.com/auth/gmail.modify', 'https://www.googleapis.com/auth/spreadsheets']
-EMAIL_ADDRESS = 'swethasaid@gmail.com'
-SHEET_ID = '1DxOsY8vu6NEJtaKRi1XS7Y9Ov-zD28txU66v-vIxZds'
 
 # Enhanced categories with priority levels
 CATEGORIES = {
@@ -307,7 +309,7 @@ _{digest_days}-day summary ({len(recent_articles)} articles)_
                 for i, msg in enumerate(parts, 1):
                     try:
                         import requests
-                        
+
                         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
                         payload = {
                             'chat_id': TELEGRAM_CHAT_ID,
@@ -315,7 +317,7 @@ _{digest_days}-day summary ({len(recent_articles)} articles)_
                             'parse_mode': 'Markdown',
                             'disable_web_page_preview': True
                         }
-                        
+
                         response = requests.post(url, json=payload)
                         response.raise_for_status()
                         print(f"  ✓ Digest part {i}/{len(parts)} sent")
