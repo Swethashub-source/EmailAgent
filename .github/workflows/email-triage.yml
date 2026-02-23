@@ -19,6 +19,7 @@ on:
 jobs:
   triage_emails:
     runs-on: ubuntu-latest
+    environment: GOOGLE_CREDENTIALS
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -43,13 +44,13 @@ jobs:
 
       - name: Debug repository secrets
         run: |
-          echo "GOOGLE_CREDENTIALS exists: ${{ vars.GOOGLE_CREDENTIALS != '' }}"
-          echo "GOOGLE_TOKEN exists: ${{ vars.GOOGLE_TOKEN != '' }}"
+          echo "GOOGLE_CREDENTIALS exists: ${{ secrets.GOOGLE_CREDENTIALS != '' }}"
+          echo "GOOGLE_TOKEN exists: ${{ secrets.GOOGLE_TOKEN != '' }}"
 
       - name: Configure Google Cloud Credentials
         run: |
-          echo '${{ vars.GOOGLE_CREDENTIALS }}' > credentials.json
-          echo '${{ vars.GOOGLE_TOKEN }}' > token.json
+          echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
+          echo '${{ secrets.GOOGLE_TOKEN }}' > token.json
 
       - name: Create .env file using repository variables
         run: |
@@ -65,12 +66,16 @@ jobs:
           echo -e "\n=== Environment variables ==="
           cat .env | xargs -I {} sh -c 'echo {}'
 
-      - name: Verify Python can read .env
+      - name: Verify Python can read .env (fixed dotenv)
         run: |
           python - <<END
           import os
           from dotenv import load_dotenv
-          load_dotenv()
+          import os.path
+
+          # Explicitly specify path to .env file
+          dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+          load_dotenv(dotenv_path=dotenv_path)
           print("OPENROUTER_API_KEY loaded:", repr(os.getenv("OPENROUTER_API_KEY")))
           print("GOOGLE_API_KEY loaded:", repr(os.getenv("GOOGLE_API_KEY")))
           print("TELEGRAM_BOT_TOKEN loaded:", repr(os.getenv("TELEGRAM_BOT_TOKEN")))
