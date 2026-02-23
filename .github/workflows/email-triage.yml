@@ -19,7 +19,7 @@ on:
 jobs:
   triage_emails:
     runs-on: ubuntu-latest
-    environment: Google Credentials  # Specify the environment to use its secrets
+    environment: Google Credentials
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,6 +35,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Debug secrets
+        run: |
+          echo "OPENROUTER_API_KEY exists: ${{ secrets.OPENROUTER_API_KEY != '' }}"
+          echo "GOOGLE_API_KEY exists: ${{ secrets.GOOGLE_API_KEY != '' }}"
+          echo "TELEGRAM_BOT_TOKEN exists: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}"
+          echo "TELEGRAM_CHAT_ID exists: ${{ secrets.TELEGRAM_CHAT_ID != '' }}"
+          echo "GOOGLE_CREDENTIALS exists: ${{ secrets.GOOGLE_CREDENTIALS != '' }}"
+          echo "GOOGLE_TOKEN exists: ${{ secrets.GOOGLE_TOKEN != '' }}"
+
       - name: Configure Google Cloud Credentials
         run: |
           echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
@@ -42,15 +51,29 @@ jobs:
 
       - name: Create .env file
         run: |
-          cat <<'EOF' > .env
-          OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
-          GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
-          TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
-          EOF
+          echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" > .env
+          echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" >> .env
+          echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
+          echo "TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}" >> .env
 
       - name: Verify .env file
-        run: cat .env
+        run: |
+          echo -e "\n=== .env file contents ==="
+          cat .env
+          echo -e "\n=== Environment variables ==="
+          cat .env | xargs -I {} sh -c 'echo {}'
+
+      - name: Verify Python can read .env
+        run: |
+          python - <<END
+          import os
+          from dotenv import load_dotenv
+          load_dotenv()
+          print("OPENROUTER_API_KEY loaded:", repr(os.getenv("OPENROUTER_API_KEY")))
+          print("GOOGLE_API_KEY loaded:", repr(os.getenv("GOOGLE_API_KEY")))
+          print("TELEGRAM_BOT_TOKEN loaded:", repr(os.getenv("TELEGRAM_BOT_TOKEN")))
+          print("TELEGRAM_CHAT_ID loaded:", repr(os.getenv("TELEGRAM_CHAT_ID")))
+          END
 
       - name: Run Email Triage
         run: python email_triage.py
