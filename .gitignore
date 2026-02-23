@@ -1,0 +1,30 @@
+# Environment variables
+.env
+
+# Virtual environment
+venv/
+.env/
+env/
+ENV/
+
+# Credentials
+credentials.json
+token.json
+
+# Log files
+*.log
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
