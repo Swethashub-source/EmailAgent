@@ -19,7 +19,6 @@ on:
 jobs:
   triage_emails:
     runs-on: ubuntu-latest
-    environment: Google Credentials
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -35,12 +34,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Debug secrets
+      - name: Debug repository variables
         run: |
-          echo "OPENROUTER_API_KEY exists: ${{ secrets.OPENROUTER_API_KEY != '' }}"
-          echo "GOOGLE_API_KEY exists: ${{ secrets.GOOGLE_API_KEY != '' }}"
-          echo "TELEGRAM_BOT_TOKEN exists: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}"
-          echo "TELEGRAM_CHAT_ID exists: ${{ secrets.TELEGRAM_CHAT_ID != '' }}"
+          echo "OPENROUTER_API_KEY: ${{ vars.OPENROUTER_API_KEY }}"
+          echo "GOOGLE_API_KEY: ${{ vars.GOOGLE_API_KEY }}"
+          echo "TELEGRAM_BOT_TOKEN: ${{ vars.TELEGRAM_BOT_TOKEN }}"
+          echo "TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}"
+
+      - name: Debug repository secrets
+        run: |
           echo "GOOGLE_CREDENTIALS exists: ${{ secrets.GOOGLE_CREDENTIALS != '' }}"
           echo "GOOGLE_TOKEN exists: ${{ secrets.GOOGLE_TOKEN != '' }}"
 
@@ -49,12 +51,12 @@ jobs:
           echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
           echo '${{ secrets.GOOGLE_TOKEN }}' > token.json
 
-      - name: Create .env file
+      - name: Create .env file using repository variables
         run: |
-          echo "OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}" > .env
-          echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" >> .env
-          echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env
-          echo "TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}" >> .env
+          echo "OPENROUTER_API_KEY=${{ vars.OPENROUTER_API_KEY }}" > .env
+          echo "GOOGLE_API_KEY=${{ vars.GOOGLE_API_KEY }}" >> .env
+          echo "TELEGRAM_BOT_TOKEN=${{ vars.TELEGRAM_BOT_TOKEN }}" >> .env
+          echo "TELEGRAM_CHAT_ID=${{ vars.TELEGRAM_CHAT_ID }}" >> .env
 
       - name: Verify .env file
         run: |
