@@ -43,13 +43,13 @@ jobs:
 
       - name: Debug repository secrets
         run: |
-          echo "GOOGLE_CREDENTIALS exists: ${{ secrets.GOOGLE_CREDENTIALS != '' }}"
-          echo "GOOGLE_TOKEN exists: ${{ secrets.GOOGLE_TOKEN != '' }}"
+          echo "GOOGLE_CREDENTIALS exists: ${{ vars.GOOGLE_CREDENTIALS != '' }}"
+          echo "GOOGLE_TOKEN exists: ${{ vars.GOOGLE_TOKEN != '' }}"
 
       - name: Configure Google Cloud Credentials
         run: |
-          echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
-          echo '${{ secrets.GOOGLE_TOKEN }}' > token.json
+          echo '${{ vars.GOOGLE_CREDENTIALS }}' > credentials.json
+          echo '${{ vars.GOOGLE_TOKEN }}' > token.json
 
       - name: Create .env file using repository variables
         run: |
