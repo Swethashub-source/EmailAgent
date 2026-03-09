@@ -77,19 +77,31 @@ def escape_markdown(text):
 # Gmail service
 def get_gmail_service():
     creds = None
+    print("Starting get_gmail_service...")
     try:
         if os.path.exists('token.json'):
-            print("Loading credentials from token.json")
+            print("token.json found, loading credentials...")
+            with open('token.json', 'r', encoding='utf-8') as f:
+                token_data = f.read()
+                print(f"token.json size: {len(token_data)} bytes")
+            
             creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+            print(f"Credentials valid: {creds.valid}")
+            if creds.expired:
+                print(f"Token expired at: {creds.expiry}")
+                print(f"Refresh token available: {creds.refresh_token is not None}")
         
         if not creds or not creds.valid:
             print("Credentials invalid or expired, refreshing...")
             if creds and creds.expired and creds.refresh_token:
                 try:
+                    print("Attempting to refresh token...")
                     creds.refresh(Request())
+                    print("Token refresh successful")
+                    
                     with open('token.json', 'w', encoding='utf-8') as token:
                         token.write(creds.to_json())
-                    print("Successfully refreshed token")
+                    print("Successfully updated token.json")
                 except Exception as refresh_error:
                     print(f"Failed to refresh token: {refresh_error}")
                     raise
@@ -101,7 +113,9 @@ def get_gmail_service():
         return build('gmail', 'v1', credentials=creds)
         
     except Exception as e:
-        print(f"Error in get_gmail_service(): {e}")
+        print(f"Error in get_gmail_service(): {type(e).__name__}: {e}")
+        import traceback
+        print(f"Stack trace: {traceback.format_exc()}")
         raise
 
 # Sheets service
