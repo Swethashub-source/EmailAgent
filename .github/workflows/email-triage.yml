@@ -49,8 +49,34 @@ jobs:
 
       - name: Configure Google Cloud Credentials
         run: |
-          echo '${{ secrets.GOOGLE_CREDENTIALS }}' > credentials.json
-          echo '${{ secrets.GOOGLE_TOKEN }}' > token.json
+          # Write credentials.json using Python to ensure proper escaping
+          python - <<END
+          with open('credentials.json', 'w', encoding='utf-8') as f:
+              f.write('${{ secrets.GOOGLE_CREDENTIALS }}')
+          END
+          
+          # Write token.json using Python to ensure proper escaping
+          python - <<END
+          with open('token.json', 'w', encoding='utf-8') as f:
+              f.write('${{ secrets.GOOGLE_TOKEN }}')
+          END
+          
+          echo "credentials.json created, size: $(wc -c credentials.json)"
+          echo "token.json created, size: $(wc -c token.json)"
+          
+          # Verify token.json has valid JSON
+          if ! python -m json.tool token.json &>/dev/null; then
+            echo "ERROR: token.json contains invalid JSON"
+            cat token.json
+            exit 1
+          fi
+          
+          # Verify credentials.json has valid JSON
+          if ! python -m json.tool credentials.json &>/dev/null; then
+            echo "ERROR: credentials.json contains invalid JSON"
+            cat credentials.json
+            exit 1
+          fi
 
       - name: Create .env file using repository variables
         run: |
