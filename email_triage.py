@@ -77,17 +77,32 @@ def escape_markdown(text):
 # Gmail service
 def get_gmail_service():
     creds = None
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
-    return build('gmail', 'v1', credentials=creds)
+    try:
+        if os.path.exists('token.json'):
+            print("Loading credentials from token.json")
+            creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        
+        if not creds or not creds.valid:
+            print("Credentials invalid or expired, refreshing...")
+            if creds and creds.expired and creds.refresh_token:
+                try:
+                    creds.refresh(Request())
+                    with open('token.json', 'w', encoding='utf-8') as token:
+                        token.write(creds.to_json())
+                    print("Successfully refreshed token")
+                except Exception as refresh_error:
+                    print(f"Failed to refresh token: {refresh_error}")
+                    raise
+            else:
+                print("No valid refresh token available")
+                raise Exception("No valid refresh token available - please re-authenticate locally")
+                
+        print("Successfully obtained valid credentials")
+        return build('gmail', 'v1', credentials=creds)
+        
+    except Exception as e:
+        print(f"Error in get_gmail_service(): {e}")
+        raise
 
 # Sheets service
 def get_sheets_service(creds):
@@ -343,7 +358,7 @@ def run_triage():
 
     setup_category_worksheets(sheet)
 
-    print("\n🔍 Checking for pending digests...")
+    print("\nChecking for pending digests...")
     check_and_send_digests(sheet)
 
     # Fetch unread emails
@@ -355,7 +370,7 @@ def run_triage():
                 return service.users().messages().list(
                     userId=EMAIL_ADDRESS,
                     q=query,
-                    maxResults=50
+                    maxResults=1
                 ).execute()
             except Exception as e:
                 if attempt == retries - 1:
