@@ -1,11 +1,9 @@
 name: Email Triage Automation
 
 on:
-  # Run on push to main branch
   push:
     branches: [ main ]
   
-  # Run on pull request to main branch
   pull_request:
     branches: [ main ]
   
@@ -13,7 +11,6 @@ on:
   schedule:
     - cron: '30 3 * * *'
   
-  # Allow manual trigger
   workflow_dispatch:
 
 jobs:
@@ -48,42 +45,38 @@ jobs:
           echo "GOOGLE_TOKEN exists: ${{ secrets.GOOGLE_TOKEN != '' }}"
 
       - name: Configure Google Cloud Credentials
+        env:
+          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+          GOOGLE_TOKEN: ${{ secrets.GOOGLE_TOKEN }}
         run: |
-          # Write credentials.json using Python to ensure proper escaping
-          python - <<END
+          python - <<'END'
+          import os, json
+
+          # Write credentials.json
+          creds = os.environ["GOOGLE_CREDENTIALS"]
           with open('credentials.json', 'w', encoding='utf-8') as f:
-              f.write('${{ secrets.GOOGLE_CREDENTIALS }}')
-          END
-          
-          # Write token.json using Python to ensure proper escaping
-          python - <<END
+              f.write(creds)
+
+          # Write token.json
+          token = os.environ["GOOGLE_TOKEN"]
           with open('token.json', 'w', encoding='utf-8') as f:
-              f.write('${{ secrets.GOOGLE_TOKEN }}')
+              f.write(token)
+
+          # Validate both are valid JSON
+          for fname in ('credentials.json', 'token.json'):
+              with open(fname, 'r') as f:
+                  json.load(f)
+              print(f"{fname} is valid JSON")
           END
-          
+
           echo "credentials.json created, size: $(wc -c credentials.json)"
           echo "token.json created, size: $(wc -c token.json)"
-          
-          # Verify token.json has valid JSON
-          if ! python -m json.tool token.json &>/dev/null; then
-            echo "ERROR: token.json contains invalid JSON"
-            cat token.json
-            exit 1
-          fi
-          
-          # Verify credentials.json has valid JSON
-          if ! python -m json.tool credentials.json &>/dev/null; then
-            echo "ERROR: credentials.json contains invalid JSON"
-            cat credentials.json
-            exit 1
-          fi
 
       - name: Create .env file using repository variables
         run: |
           echo "OPENROUTER_API_KEY=${{ vars.OPENROUTER_API_KEY }}" > .env
           echo "GOOGLE_API_KEY=${{ vars.GOOGLE_API_KEY }}" >> .env
           echo "TELEGRAM_BOT_TOKEN=${{ vars.TELEGRAM_BOT_TOKEN }}" >> .env
-          echo "TELEGRAM_CHAT_ID=${{ vars.TELEGRAM_CHAT_ID }}" >> .env
           echo "TELEGRAM_CHAT_ID=${{ vars.TELEGRAM_CHAT_ID }}" >> .env
           echo "EMAIL_ADDRESS=${{ vars.EMAIL_ADDRESS }}" >> .env
           echo "SHEET_ID=${{ vars.SHEET_ID }}" >> .env
@@ -97,13 +90,11 @@ jobs:
 
       - name: Verify Python can read .env (fixed dotenv)
         run: |
-          python - <<END
-          import os
+          python - <<'END'
+          import os, os.path
           from dotenv import load_dotenv
-          import os.path
 
-          # Explicitly specify path to .env file
-          dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+          dotenv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
           load_dotenv(dotenv_path=dotenv_path)
           print("OPENROUTER_API_KEY loaded:", repr(os.getenv("OPENROUTER_API_KEY")))
           print("GOOGLE_API_KEY loaded:", repr(os.getenv("GOOGLE_API_KEY")))
