@@ -41,13 +41,13 @@ jobs:
 
       - name: Debug repository secrets
         run: |
-          echo "GOOGLE_CREDENTIALS exists: ${{ secrets.GOOGLE_CREDENTIALS != '' }}"
-          echo "GOOGLE_TOKEN exists: ${{ secrets.GOOGLE_TOKEN != '' }}"
+          echo "GOOGLE_CREDENTIALS exists: ${{ vars.GOOGLE_CREDENTIALS != '' }}"
+          echo "GOOGLE_TOKEN exists: ${{ vars.GOOGLE_TOKEN != '' }}"
 
       - name: Configure Google Cloud Credentials
         env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          GOOGLE_TOKEN: ${{ secrets.GOOGLE_TOKEN }}
+          GOOGLE_CREDENTIALS: ${{ vars.GOOGLE_CREDENTIALS }}
+          GOOGLE_TOKEN: ${{ vars.GOOGLE_TOKEN }}
         run: |
           python - <<'END'
           import os, json
