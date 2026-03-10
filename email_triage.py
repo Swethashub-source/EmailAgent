@@ -81,10 +81,6 @@ def get_gmail_service():
     try:
         if os.path.exists('token.json'):
             print("token.json found, loading credentials...")
-            with open('token.json', 'r', encoding='utf-8') as f:
-                token_data = f.read()
-                print(f"token.json size: {len(token_data)} bytes")
-            
             creds = Credentials.from_authorized_user_file('token.json', SCOPES)
             print(f"Credentials valid: {creds.valid}")
             if creds.expired:
@@ -106,9 +102,13 @@ def get_gmail_service():
                     print(f"Failed to refresh token: {refresh_error}")
                     raise
             else:
-                print("No valid refresh token available")
-                raise Exception("No valid refresh token available - please re-authenticate locally")
-                
+                print("No valid credentials, opening browser for authentication...")
+                # ↓ Opens browser on first run or missing token
+                flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+                creds = flow.run_local_server(port=0)
+                with open('token.json', 'w', encoding='utf-8') as token:
+                    token.write(creds.to_json())
+                print("✅ New token.json saved from browser auth")
         print("Successfully obtained valid credentials")
         return build('gmail', 'v1', credentials=creds)
         
@@ -384,7 +384,7 @@ def run_triage():
                 return service.users().messages().list(
                     userId=EMAIL_ADDRESS,
                     q=query,
-                    maxResults=1
+                    maxResults=100
                 ).execute()
             except Exception as e:
                 if attempt == retries - 1:
@@ -392,7 +392,7 @@ def run_triage():
                 print(f"Gmail API error: {e}, retrying...")
                 time.sleep(2)
 
-    print(f"\n📧 Processing unread emails...")
+    print(f"\nProcessing unread emails...")
     print(f"Query: {query}")
     results = fetch_messages_with_retry(service, query)
     messages = results.get('messages', [])
@@ -459,7 +459,7 @@ def run_triage():
                 body={'removeLabelIds': ['UNREAD']}
             ).execute()
 
-            print(f"  ✓ Processed and Logged: {subject}")
+            print(f"  OK: Processed and Logged: {subject}")
             time.sleep(1)
 
         except Exception as e:
