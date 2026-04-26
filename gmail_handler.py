@@ -71,7 +71,7 @@ class GmailHandler:
         
         return creds
     
-    def get_unread_messages(self, days=7, max_results=1):
+    def get_unread_messages(self, days=7, max_results=100):
         """
         Fetch unread messages from the last N days.
         
