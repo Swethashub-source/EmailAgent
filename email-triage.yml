@@ -45,9 +45,9 @@ jobs:
 
       - name: Configure Google Cloud Credentials
         env:
-          GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
-          TOKEN_1: ${{ secrets.TOKEN_SWETHASAID }}
-          TOKEN_2: ${{ secrets.TOKEN_SWETHASAIDAKUPATI }}
+          GOOGLE_CREDENTIALS: ${{ vars.GOOGLE_CREDENTIALS }}
+          TOKEN_1: ${{ vars.TOKEN_SWETHASAID }}
+          TOKEN_2: ${{ vars.TOKEN_SWETHASAIDAKUPATI }}
         run: |
           python - <<'END'
           import os
