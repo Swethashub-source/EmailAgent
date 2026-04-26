@@ -1,136 +1,280 @@
 # Email Triage Automation
 
-This repository contains an email triage automation system that uses AI to categorize emails and send notifications via Telegram. The system is designed to be run automatically using GitHub Actions.
+A **modular, extensible** email triage system that uses AI (OpenRouter/Gemini) to automatically categorize and organize emails across multiple Gmail accounts with per-account Google Sheets logging and Telegram notifications.
 
 ## Features
 
-- 🤖 AI-powered email categorization using OpenRouter or Google Gemini
-- 📊 Google Sheets integration for logging and tracking emails
-- 📱 Telegram notifications for important emails
-- 📚 Digest functionality for periodic email summaries
-- ⏰ Automatic daily execution using GitHub Actions
+- 🤖 **AI-Powered Categorization**: Uses OpenRouter API (Google Gemini model) to analyze and categorize emails
+- 📊 **Google Sheets Integration**: Logs all processed emails with details like category, sender, subject, and summary
+- 📱 **Telegram Notifications**: Sends instant alerts for high-priority emails
+- ⭐ **Smart Label Actions**: Stars important emails and labels others with `EmailTriage`
+- 🗂 **Monthly Auto-Archive**: Archives `EmailTriage` inbox emails older than 30 days
+- 👥 **Multi-Account Support**: Process multiple Gmail accounts with separate sheets and notifications
+- 🔧 **Easy to Extend**: Modular design makes it simple to add features or integrate new services
+- 📚 **Well-Documented**: Comprehensive code documentation and developer guide
+- ⏰ **Automated Execution**: Runs daily using GitHub Actions
 
-## Prerequisites
+## How It Works
 
-### 1. GitHub Repository
-
-1. Create a new GitHub repository
-2. Add the following files to your repository:
-   - `email_triage.py` - Main email triage script
-   - `requirements.txt` - Python dependencies
-   - `.github/workflows/email-triage.yml` - GitHub Actions workflow
-
-### 2. Google Cloud Platform (GCP) Setup
-
-1. Create a GCP project
-2. Enable the Gmail API and Google Sheets API
-3. Create OAuth 2.0 Client IDs credentials
-4. Download the `credentials.json` file
-5. Run the script locally once to generate `token.json`
-
-### 3. OpenRouter API Key
-
-1. Sign up for an OpenRouter account
-2. Create a new API key
-
-### 4. Telegram Bot
-
-1. Create a new Telegram bot using @BotFather
-2. Get your bot token
-3. Create a new channel or group
-4. Add your bot to the channel/group
-5. Get your chat ID
-
-## Configuration
-
-### GitHub Secrets
-
-Add the following secrets to your GitHub repository:
-
-1. **GOOGLE_CREDENTIALS** - Content of `credentials.json` (base64 encoded)
-2. **GOOGLE_TOKEN** - Content of `token.json` (base64 encoded)
-3. **OPENROUTER_API_KEY** - Your OpenRouter API key
-4. **GOOGLE_API_KEY** - Your Google Cloud API key (for Gemini)
-5. **TELEGRAM_BOT_TOKEN** - Your Telegram bot token
-6. **TELEGRAM_CHAT_ID** - Your Telegram chat ID
-
-### Environment Variables
-
-The following environment variables are configured in the workflow:
-
-```
-OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
-GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
-TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
-TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
-```
-
-## Usage
-
-### Automatic Execution
-
-The workflow is configured to run automatically:
-
-1. **Daily at 09:00 AM IST (03:30 AM UTC)**
-2. **On push to main branch**
-3. **On pull request to main branch**
-
-### Manual Execution
-
-You can also run the workflow manually:
-
-1. Go to the "Actions" tab of your repository
-2. Select the "Email Triage Automation" workflow
-3. Click "Run workflow"
-4. Choose the branch (main)
-5. Click "Run workflow" button
-
-## Workflow Details
-
-The GitHub Actions workflow performs the following steps:
-
-1. **Checkout repository** - Downloads the code from your repository
-2. **Set up Python** - Installs Python 3.10
-3. **Install dependencies** - Installs required Python packages
-4. **Configure Google Cloud Credentials** - Creates `credentials.json` and `token.json`
-5. **Create .env file** - Creates the environment variables file
-6. **Run Email Triage** - Executes the `email_triage.py` script
-7. **Cleanup credentials** - Removes sensitive files (runs always, even if previous steps fail)
+1. **Email Collection**: Fetches unread emails from Gmail using Google API
+2. **AI Analysis**: Sends email content to OpenRouter API for categorization and summarization
+3. **Logging**: Stores results in Google Sheets with appropriate categories
+4. **Notifications**: Sends Telegram alerts for high-priority emails
+5. **Smart Labeling**:
+   - Important categories → starred + Telegram alert
+   - Other categories → labeled with `EmailTriage`
+6. **Mark as Read**: Automatically marks processed emails as read
+7. **Auto-Archive**: Old `EmailTriage` messages removed from Inbox monthly
 
 ## Categories
 
-The system categorizes emails into the following categories:
+- **Job-Application**: Job offers, interview invitations, recruitment-related emails (🔴 high priority)
+- **Rejection**: Job rejections, declined applications (🟡 medium priority)
+- **Article-Tech**: Technical articles, tech news, programming tutorials (🟢 low priority)
+- **Article-Career**: Career advice, professional development, industry insights (🟢 low priority)
+- **Important-Alert**: Urgent notifications, security alerts (🔴 high priority)
+- **Newsletter**: Regular newsletters, marketing emails (🟢 low priority)
+- **Spam**: Promotional content, unsolicited emails (🟢 low priority)
 
-- **Job-Application**: Job offers, interview invitations, recruitment-related emails
-- **Rejection**: Job rejections, declined applications
-- **Article-Tech**: Technical articles, tech news, programming tutorials, software updates
-- **Article-Career**: Career advice, professional development, industry insights
-- **Important-Alert**: Urgent notifications, security alerts, time-sensitive information
-- **Newsletter**: Regular newsletters, marketing emails, updates
-- **Spam**: Promotional content, unsolicited emails, low-value content
+## Project Architecture
 
-## Local Development
+The project is organized into **focused, reusable modules**:
 
-To run the script locally:
+| Module                 | Purpose                                       |
+| ---------------------- | --------------------------------------------- |
+| `config.py`            | Configuration loading and validation          |
+| `gmail_handler.py`     | Gmail API wrapper (fetch, label, archive)     |
+| `sheets_handler.py`    | Google Sheets API wrapper (log emails)        |
+| `ai_classifier.py`     | Email classification using OpenRouter AI      |
+| `telegram_notifier.py` | Telegram bot notifications                    |
+| `email_utils.py`       | Helper functions (parsing, formatting, links) |
+| `email_triage.py`      | Main orchestrator (coordinates all modules)   |
 
-1. Clone the repository
-2. Install dependencies: `pip install -r requirements.txt`
-3. Create a `.env` file with your API keys and tokens
-4. Run the script: `python email_triage.py`
+This modular design makes it **easy to**:
+
+- Add new notification services (Slack, Discord, etc.)
+- Integrate different AI models
+- Support additional email providers
+- Write unit tests
+- Understand and maintain the codebase
+
+**For developers:** See [DEVELOPMENT.md](DEVELOPMENT.md) for a detailed guide to extending and contributing.
+
+## Technologies Used
+
+- **Python 3.8+**: Main programming language
+- **Gmail API**: Email collection and management
+- **Google Sheets API**: Data logging
+- **OpenRouter API**: AI analysis (Google Gemini)
+- **Telegram Bot API**: Notifications
+- **GitHub Actions**: Automation
+
+## Setup
+
+### Prerequisites
+
+- Python 3.8+ installed
+- Gmail account(s) with IMAP/API access enabled
+- [OpenRouter API key](https://openrouter.ai/) (free tier available)
+- [Google OAuth credentials](https://console.cloud.google.com/)
+- [Google Sheet created](https://sheets.google.com) for each account
+- [Telegram Bot](https://t.me/BotFather) for each account (optional)
+
+### Installation
+
+1. **Clone the repository**
+
+   ```bash
+   git clone <repo-url>
+   cd EmailAgent
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+3. **Set up Google OAuth credentials**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project
+   - Enable Gmail API and Google Sheets API
+   - Create an OAuth 2.0 Desktop application credential
+   - Download the JSON file and save as `credentials.json`
+
+4. **Create your `.env` file**
+
+   ```bash
+   cp .env.example .env
+   ```
+
+5. **Configure `.env` with your accounts**
+
+   ```env
+   OPENROUTER_API_KEY='your-api-key-here'
+   EMAIL_ACCOUNTS='your-email@gmail.com, second-email@gmail.com'
+   SHEET_IDS='sheet-id-1, sheet-id-2'
+   TELEGRAM_BOT_TOKENS='bot-token-1, bot-token-2'
+   TELEGRAM_CHAT_ID='chat-id-1'
+   TRIAGE_LABEL_NAME='EmailTriage'
+   TRIAGE_ARCHIVE_DAYS='30'
+   ```
+
+   **How to get these values:**
+   - **SHEET_IDS**: Create a Google Sheet, copy the ID from the URL
+   - **TELEGRAM_BOT_TOKENS**: Create bot with @BotFather, get token
+   - **TELEGRAM_CHAT_ID**: Message your bot, run `python -c "import json; print(json.dumps({'update_id': 123, 'message': {'chat': {'id': 'YOUR_CHAT_ID'}}}))"`
+
+6. **Run the triage**
+
+   ```bash
+   python email_triage.py
+   ```
+
+   First run will open browser windows for OAuth authentication (once per account).
+
+## Usage
+
+### Basic Usage
+
+```bash
+python email_triage.py
+```
+
+Processes all configured accounts with default settings:
+
+- Finds unread emails from last 7 days
+- Archives triaged emails older than 30 days
+
+### Dry Run (Preview Mode)
+
+```bash
+python email_triage.py --dry-run
+```
+
+Shows what would happen without making any actual changes (useful for testing).
+
+### Custom Cleanup Period
+
+```bash
+python email_triage.py --cleanup-days 45
+```
+
+Archives triaged emails older than 45 days (instead of default 30).
+
+### Multi-Account Setup
+
+When you run `python email_triage.py` with multiple accounts in `EMAIL_ACCOUNTS`:
+
+1. **First run**: The script will open a browser window for each account to request OAuth consent
+2. **Token storage**: Each account's token is saved as `token_<email>.json` (e.g., `token_a@gmail.com.json`)
+3. **Subsequent runs**: Use the saved tokens; refresh happens automatically if they expire
+4. **Per-account sheets**: Each account logs to its own Google Sheet (configured by `SHEET_IDS`)
+5. **Per-account notifications**: Each account sends to its own Telegram chat (configured by `TELEGRAM_BOT_TOKENS` and `TELEGRAM_CHAT_IDS`)
+6. **Security**: All tokens and configurations are per-account and stored securely in `.env`
+
+## Automation with GitHub Actions
+
+To run this automatically every day:
+
+1. **Push to GitHub** with your `.env` file in `.gitignore`
+
+2. **Create `.github/workflows/email-triage.yml`**:
+
+   ```yaml
+   name: Email Triage
+   on:
+     schedule:
+       - cron: "0 8 * * *" # Run at 8 AM UTC daily
+
+   jobs:
+     triage:
+       runs-on: ubuntu-latest
+       steps:
+         - uses: actions/checkout@v3
+         - uses: actions/setup-python@v4
+           with:
+             python-version: "3.11"
+         - run: pip install -r requirements.txt
+         - run: python email_triage.py
+           env:
+             GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+             OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+             EMAIL_ACCOUNTS: ${{ secrets.EMAIL_ACCOUNTS }}
+             SHEET_IDS: ${{ secrets.SHEET_IDS }}
+             TELEGRAM_BOT_TOKENS: ${{ secrets.TELEGRAM_BOT_TOKENS }}
+             TELEGRAM_CHAT_IDS: ${{ secrets.TELEGRAM_CHAT_IDS }}
+   ```
+
+3. **Add GitHub Secrets**:
+   - `GOOGLE_CREDENTIALS`: Content of your `credentials.json` file
+   - `OPENROUTER_API_KEY`: Your OpenRouter API key
+   - `EMAIL_ACCOUNTS`: Your comma-separated email list
+   - `SHEET_IDS`: Your comma-separated Google Sheet IDs
+   - `TELEGRAM_BOT_TOKENS`: Your comma-separated Telegram bot tokens
+   - `TELEGRAM_CHAT_IDS`: Your comma-separated Telegram chat IDs
+
+## Customization
+
+### Changing Email Categories
+
+Edit `config.py` to add, remove, or modify categories:
+
+```python
+CATEGORIES = {
+    "Your-New-Category": {
+        "priority": "high",
+        "telegram_notify": True  # Send Telegram for this category
+    },
+    ...
+}
+```
+
+### Integrating a New Notification Service
+
+1. Create a new notifier module (e.g., `slack_notifier.py`)
+2. Implement the notification logic
+3. Use it in `email_triage.py` alongside `TelegramNotifier`
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed examples.
+
+### Modifying Email Processing Logic
+
+Edit the `EmailTriageProcessor._process_message()` method in `email_triage.py` to:
+
+- Add attachment handling
+- Change label behavior
+- Add custom filtering
 
 ## Troubleshooting
 
-### Common Issues
+| Problem                  | Solution                                                         |
+| ------------------------ | ---------------------------------------------------------------- |
+| `PermissionError: [403]` | Share the Google Sheet with your account and grant Editor access |
+| `No emails processed`    | Check that your account has unread emails from the last 7 days   |
+| `Token expired`          | Delete the corresponding `token_<email>.json` file and re-run    |
+| `"Quota Exceeded"`       | Wait before running again; API rate limits have been hit         |
+| Invalid JSON from AI     | The AI response was malformed; it falls back to "Spam" category  |
 
-1. **Authentication Errors**: Ensure your `credentials.json` and `token.json` are valid and properly formatted.
-2. **API Rate Limits**: The script includes retry logic for rate limit errors.
-3. **Telegram Notifications**: Verify your bot token and chat ID are correct.
-4. **Google Sheets Access**: Ensure your Google Sheets API key and sheet ID are valid.
+## Contributing
 
-### Logs
+Want to improve this project? See [DEVELOPMENT.md](DEVELOPMENT.md) for:
 
-Check the GitHub Actions logs for detailed information about each workflow run.
+- Architecture deep dive
+- Common workflows
+- Testing strategies
+- Code style guide
 
 ## License
 
-MIT License
+MIT License - Feel free to use and modify for your needs.
+
+## Support
+
+For issues or questions:
+
+1. Check [DEVELOPMENT.md](DEVELOPMENT.md) for common problems
+2. Review the code comments and docstrings
+3. Test with `--dry-run` flag to debug
