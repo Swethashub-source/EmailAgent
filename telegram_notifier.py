@@ -37,6 +37,17 @@ class TelegramNotifier:
                 disable_web_page_preview=True
             )
     
+    def _escape_markdown(self, text):
+        """Helper to escape special markdown characters for Telegram Markdown V1."""
+        if not text:
+            return ""
+        # Escape characters that have special meaning in Telegram Markdown V1
+        # * _ [ `
+        chars_to_escape = ['*', '_', '[', '`']
+        for char in chars_to_escape:
+            text = text.replace(char, f"\\{char}")
+        return text
+
     def send_alert(self, category, subject, summary, gmail_link):
         """
         Send an email alert to Telegram.
@@ -55,10 +66,15 @@ class TelegramNotifier:
             return False
         
         try:
+            # Escape content to prevent Telegram parsing errors (e.g. from '[' or '_')
+            clean_category = self._escape_markdown(category)
+            clean_subject = self._escape_markdown(subject)
+            clean_summary = self._escape_markdown(summary)
+
             message = f"""📧 *Important Email Alert*
-*Category:* {category}
-*Subject:* {subject}
-*Summary:* {summary}
+*Category:* {clean_category}
+*Subject:* {clean_subject}
+*Summary:* {clean_summary}
 [View Email]({gmail_link})
 """
 
