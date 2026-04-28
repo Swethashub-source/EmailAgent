@@ -83,7 +83,7 @@ class EmailTriageProcessor:
                     ):
                         break
                     processed_count += 1
-                    time.sleep(1)  # Rate limiting
+                    time.sleep(2)  # Rate limiting - increased from 1s
                 
                 except Exception as e:
                     print_progress("❌", f"Error processing message: {e}")
@@ -123,8 +123,12 @@ class EmailTriageProcessor:
             
             # Classify with AI
             analysis = self.ai_classifier.classify_email(subject, body)
-            category = analysis['category']
-            summary = analysis['summary']
+            if analysis is None:
+                print_progress("⚠️", "AI returned None, stopping to prevent quota issues")
+                return False
+            
+            category = analysis.get('category', 'Spam')
+            summary = analysis.get('summary', 'Unable to classify')
             links = format_links(analysis.get('links', []))
             
             # Build Gmail link
@@ -170,8 +174,12 @@ class EmailTriageProcessor:
             return True
         
         except Exception as e:
-            if "429" in str(e):
-                print_progress("⏸️", "Quota exceeded, stopping")
+            error_str = str(e)
+            if "429" in error_str or "rate" in error_str.lower():
+                print_progress("⏸️", "Rate limited, stopping to prevent API abuse")
+                return False
+            if "504" in error_str or "timeout" in error_str.lower():
+                print_progress("⏸️", "Service unavailable (504), stopping")
                 return False
             print_progress("⚠️", f"Error: {e}")
             return True

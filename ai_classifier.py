@@ -5,7 +5,9 @@ Uses OpenRouter API with Google Gemini model to classify and summarize emails.
 """
 
 import json
+import time
 from openai import OpenAI
+from openai._exceptions import RateLimitError
 
 from config import Config
 
@@ -20,13 +22,14 @@ class AIClassifier:
             api_key=Config.OPENROUTER_API_KEY,
         )
     
-    def classify_email(self, subject, body):
+    def classify_email(self, subject, body, max_retries=3):
         """
         Classify and summarize an email using AI.
         
         Args:
             subject: Email subject
             body: Email body (will be truncated to 2000 chars)
+            max_retries: Number of retries for transient failures
         
         Returns:
             Dictionary with keys:
@@ -66,24 +69,49 @@ Email content:
 {email_text}
 """
         
-        try:
-            response = self.client.chat.completions.create(
-                model=Config.AI_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                response_format={"type": "json_object"},
-                temperature=0.2
-            )
+        # Retry logic with exponential backoff
+        for attempt in range(max_retries):
+            try:
+                response = self.client.chat.completions.create(
+                    model=Config.AI_MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    response_format={"type": "json_object"},
+                    temperature=0.2
+                )
+                
+                # Validate response structure
+                if not response.choices or response.choices[0] is None:
+                    raise ValueError("Empty API response")
+                
+                result = json.loads(response.choices[0].message.content)
+                return result
             
-            result = json.loads(response.choices[0].message.content)
-            return result
-        
-        except json.JSONDecodeError:
-            print(f"  ❌ AI returned invalid JSON, defaulting to Spam")
-            return self._default_fallback_response("Invalid AI response format")
-        
-        except Exception as e:
-            print(f"  ❌ AI classification error: {e}")
-            return self._default_fallback_response(str(e))
+            except (RateLimitError, TimeoutError) as e:
+                wait_time = (2 ** attempt) + (1 if attempt > 0 else 0)  # Exponential backoff
+                print(f"  ⏳ Rate limited, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})")
+                if attempt < max_retries - 1:
+                    time.sleep(wait_time)
+                else:
+                    print(f"  ❌ AI classification error: {e}")
+                    return self._default_fallback_response(str(e))
+            
+            except json.JSONDecodeError:
+                print(f"  ❌ AI returned invalid JSON, defaulting to Spam")
+                return self._default_fallback_response("Invalid AI response format")
+            
+            except Exception as e:
+                error_str = str(e)
+                if "429" in error_str or "rate" in error_str.lower():
+                    wait_time = (2 ** attempt) + 1
+                    print(f"  ⏳ Rate limited, retrying in {wait_time}s (attempt {attempt + 1}/{max_retries})")
+                    if attempt < max_retries - 1:
+                        time.sleep(wait_time)
+                    else:
+                        print(f"  ❌ AI classification error: {e}")
+                        return self._default_fallback_response(str(e))
+                else:
+                    print(f"  ❌ AI classification error: {e}")
+                    return self._default_fallback_response(str(e))
     
     @staticmethod
     def _default_fallback_response(error_msg):
